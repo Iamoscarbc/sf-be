@@ -103,7 +103,7 @@ app.get('/api/users', tokenVerify, async (req, res) => {
     }
 })
 
-app.get('/api/profiles', async (req, res) => {
+app.get('/api/profiles', tokenVerify, async (req, res) => {
   try{
     let collection = await Profiles.find()
     res.json({
