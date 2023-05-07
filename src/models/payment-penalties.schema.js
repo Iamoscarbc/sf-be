@@ -2,9 +2,7 @@ import mongoose from "../config/db.js";
 
 const paymentPenaltiesSchema = new mongoose.Schema({
   date: String,
-  firstname: String,
-  lastname: String,
-  docnumner: String,
+  idUser: String,
   amount: Number,
   paymentReason: String,
   documents: Array,

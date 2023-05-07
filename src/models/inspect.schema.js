@@ -2,9 +2,7 @@ import mongoose from "../config/db.js";
 
 const inspectSchema = new mongoose.Schema({
   date: String,
-  firstname: String,
-  lastname: String,
-  docnumner: String,
+  idUser: String,
   description: String,
   documents: Array
 });
