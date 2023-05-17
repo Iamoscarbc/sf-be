@@ -18,6 +18,8 @@ app.use(bodyParser.urlencoded({
   charset: 'UTF-8'
 }))
 
+app.use(bodyParser.json());
+
 app.set('port', process.env.PORT || 3000)
 app.set('json spaces', 1)
 
@@ -79,9 +81,7 @@ app.post('/api/inspects', tokenVerify, async (req, res) => {
     if(! await fs.existsSync(route)){
       await fs.mkdirSync(route)
     }
-    let documents = [
-      { path: path.join(route, req.files.file.name), name: req.files.file.name }
-    ]
+    let documents 
     if(!!req.files.file.length){
       for (let i = 0; i < req.files.file.length; i++) {
         const d = req.files.file[i];
@@ -95,6 +95,9 @@ app.post('/api/inspects', tokenVerify, async (req, res) => {
       })
     }else{
       await fs.writeFileSync(path.join(route, req.files.file.name), req.files.file.data)
+      documents = [
+        { path: path.join(route, req.files.file.name), name: req.files.file.name }
+      ]
     }
 
     await Inspect.findOneAndUpdate({_id: as._id},{
@@ -104,6 +107,29 @@ app.post('/api/inspects', tokenVerify, async (req, res) => {
     res.json({
       success: true,
       message: "Inspect created!!"
+    })
+  } catch (err) {
+    console.error(err)
+    res.json({
+      success: false,
+      error: err
+    })
+  }
+})
+
+app.put('/api/inspect/:id', tokenVerify, async (req, res) => {
+  try{
+    console.log("req.body", req)
+    let {description} = req.body
+    console.log("description", description)
+    
+    await Inspect.findOneAndUpdate({_id: req.params.id},{
+      description
+    })
+
+    res.json({
+      success: true,
+      message: "Inspect updated!!"
     })
   } catch (err) {
     console.error(err)
