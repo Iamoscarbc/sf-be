@@ -81,28 +81,30 @@ app.post('/api/inspects', tokenVerify, async (req, res) => {
     if(! await fs.existsSync(route)){
       await fs.mkdirSync(route)
     }
-    let documents 
-    if(!!req.files.file.length){
-      for (let i = 0; i < req.files.file.length; i++) {
-        const d = req.files.file[i];
-        await fs.writeFileSync(path.join(route, d.name), d.data)
-      }
-      documents = req.files.file.map(d => {
-        return {
-          path: path.join(route, d.name),
-          name: d.name
+    if(!!req.files){
+      let documents 
+      if(!!req.files.file.length){
+        for (let i = 0; i < req.files.file.length; i++) {
+          const d = req.files.file[i];
+          await fs.writeFileSync(path.join(route, d.name), d.data)
         }
+        documents = req.files.file.map(d => {
+          return {
+            path: path.join(route, d.name),
+            name: d.name
+          }
+        })
+      }else{
+        await fs.writeFileSync(path.join(route, req.files.file.name), req.files.file.data)
+        documents = [
+          { path: path.join(route, req.files.file.name), name: req.files.file.name }
+        ]
+      }
+  
+      await Inspect.findOneAndUpdate({_id: as._id},{
+        documents,
       })
-    }else{
-      await fs.writeFileSync(path.join(route, req.files.file.name), req.files.file.data)
-      documents = [
-        { path: path.join(route, req.files.file.name), name: req.files.file.name }
-      ]
     }
-
-    await Inspect.findOneAndUpdate({_id: as._id},{
-      documents,
-    })
 
     res.json({
       success: true,
@@ -130,6 +132,23 @@ app.put('/api/inspect/:id', tokenVerify, async (req, res) => {
     res.json({
       success: true,
       message: "Inspect updated!!"
+    })
+  } catch (err) {
+    console.error(err)
+    res.json({
+      success: false,
+      error: err
+    })
+  }
+})
+
+app.delete('/api/inspect/:id', tokenVerify, async (req, res) => {
+  try{    
+    await Inspect.deleteOne({_id: req.params.id})
+
+    res.json({
+      success: true,
+      message: "Inspect deleted!!"
     })
   } catch (err) {
     console.error(err)
