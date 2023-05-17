@@ -6,17 +6,20 @@ import fileUpload from 'express-fileupload'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 const app = express()
+import fs from 'fs'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 import "./config/loadEnvironment.js"
 
 import { Inspect, PaymentPenalties, Users, Profiles } from './models/index.js'
 
+app.use(bodyParser.urlencoded({
+  extended: true,
+  charset: 'UTF-8'
+}))
+
 app.set('port', process.env.PORT || 3000)
 app.set('json spaces', 1)
-
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use(fileUpload())
 
@@ -44,13 +47,34 @@ app.get('/api/inspects', tokenVerify, async (req, res) => {
 
 app.post('/api/inspects', tokenVerify, async (req, res) => {
   try{
-    await Inspect.create({
+    let {date, description} = req.body
+    let as = await Inspect.create({
+      date,
+      description,
+      idUser: req.userId
+    })
+    console.log("as", as)
+    let route = path.join(__dirname, `/documents/${as._id}`)
+    if(! await fs.existsSync(route)){
+      await fs.mkdirSync(route)
+    }
 
+    for (let i = 0; i < req.files.file.length; i++) {
+      const d = req.files.file[i];
+      await fs.writeFileSync(path.join(route, d.name), d.data)
+    }
+
+    await Inspect.findOneAndUpdate({_id: as._id},{
+      documents: req.files.file.map(d => {
+        return {
+          path: path.join(route, d.name),
+          name: d.name
+        }
+      }),
     })
     res.json({
       success: true,
-      message: "Inspects obtained!!",
-      data: collection
+      message: "Inspect created!!"
     })
   } catch (err) {
     console.error(err)
@@ -228,7 +252,7 @@ async function tokenVerify(req, res, next) {
 
   try {
     const decoded = jwt.verify(token.split(' ')[1], 'GroverFalcon123SecretKey');
-
+    
     req.userId = decoded.id;
     next();
   } catch (err) {
