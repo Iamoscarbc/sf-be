@@ -45,6 +45,27 @@ app.get('/api/inspects', tokenVerify, async (req, res) => {
     }
 })
 
+app.get('/api/inspect/:id', tokenVerify, async (req, res) => {
+  try{
+    let collection = await Inspect.findById(req.params.id).populate({
+      path: "idUser",
+      model: Users,
+      select: "firstname lastname phone docnumber codemployee user",
+    })
+    res.json({
+      success: true,
+      message: "Inspects obtained!!",
+      data: collection
+    })
+  } catch (err) {
+    console.error(err)
+    res.json({
+      success: false,
+      error: err
+    })
+  }
+})
+
 app.post('/api/inspects', tokenVerify, async (req, res) => {
   try{
     let {date, description} = req.body
@@ -53,25 +74,33 @@ app.post('/api/inspects', tokenVerify, async (req, res) => {
       description,
       idUser: req.userId
     })
-    console.log("as", as)
+    
     let route = path.join(__dirname, `/documents/${as._id}`)
     if(! await fs.existsSync(route)){
       await fs.mkdirSync(route)
     }
-
-    for (let i = 0; i < req.files.file.length; i++) {
-      const d = req.files.file[i];
-      await fs.writeFileSync(path.join(route, d.name), d.data)
-    }
-
-    await Inspect.findOneAndUpdate({_id: as._id},{
-      documents: req.files.file.map(d => {
+    let documents = [
+      { path: req.files.file.path, name: req.files.file.name }
+    ]
+    if(!!req.files.file.length){
+      for (let i = 0; i < req.files.file.length; i++) {
+        const d = req.files.file[i];
+        await fs.writeFileSync(path.join(route, d.name), d.data)
+      }
+      documents = req.files.file.map(d => {
         return {
           path: path.join(route, d.name),
           name: d.name
         }
-      }),
+      })
+    }else{
+      await fs.writeFileSync(path.join(route, req.files.file.name), req.files.file.data)
+    }
+
+    await Inspect.findOneAndUpdate({_id: as._id},{
+      documents,
     })
+
     res.json({
       success: true,
       message: "Inspect created!!"
