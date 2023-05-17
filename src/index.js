@@ -80,7 +80,7 @@ app.post('/api/inspects', tokenVerify, async (req, res) => {
       await fs.mkdirSync(route)
     }
     let documents = [
-      { path: req.files.file.path, name: req.files.file.name }
+      { path: path.join(route, req.files.file.name), name: req.files.file.name }
     ]
     if(!!req.files.file.length){
       for (let i = 0; i < req.files.file.length; i++) {
