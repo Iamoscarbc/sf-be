@@ -77,7 +77,7 @@ app.post('/api/inspects', tokenVerify, async (req, res) => {
       idUser: req.userId
     })
     
-    let route = path.join(__dirname, `/documents/${as._id}`)
+    let route = path.join(__dirname, `/documents/Inspects/${as._id}`)
     if(! await fs.existsSync(route)){
       await fs.mkdirSync(route)
     }
@@ -178,6 +178,120 @@ app.get('/api/payment-penaltie', tokenVerify, async (req, res) => {
         error: err
       })
     }
+})
+
+app.get('/api/payment-penaltie/:id', tokenVerify, async (req, res) => {
+  try{
+    let collection = await PaymentPenalties.findById(req.params.id).populate({
+      path: "idUser",
+      model: Users,
+      select: "firstname lastname phone docnumber codemployee user",
+    })
+    res.json({
+      success: true,
+      message: "Payment Penalties obtained!!",
+      data: collection
+    })
+  } catch (err) {
+    console.error(err)
+    res.json({
+      success: false,
+      error: err
+    })
+  }
+})
+
+app.post('/api/payment-penaltie', tokenVerify, async (req, res) => {
+  try{
+    let { date, paymentReason, amount, payer } = req.body
+    let as = await PaymentPenalties.create({
+      date,
+      amount,
+      paymentReason,
+      payer: JSON.parse(payer),
+      idUser: req.userId
+    })
+    
+    let route = path.join(__dirname, `/documents/PaymentPenalties/${as._id}`)
+    if(! await fs.existsSync(route)){
+      await fs.mkdirSync(route)
+    }
+    if(!!req.files){
+      let documents 
+      if(!!req.files.file.length){
+        for (let i = 0; i < req.files.file.length; i++) {
+          const d = req.files.file[i];
+          await fs.writeFileSync(path.join(route, d.name), d.data)
+        }
+        documents = req.files.file.map(d => {
+          return {
+            path: path.join(route, d.name),
+            name: d.name
+          }
+        })
+      }else{
+        await fs.writeFileSync(path.join(route, req.files.file.name), req.files.file.data)
+        documents = [
+          { path: path.join(route, req.files.file.name), name: req.files.file.name }
+        ]
+      }
+  
+      await PaymentPenalties.findOneAndUpdate({_id: as._id},{
+        documents,
+      })
+    }
+
+    res.json({
+      success: true,
+      message: "Payment Penalties created!!"
+    })
+  } catch (err) {
+    console.error(err)
+    res.json({
+      success: false,
+      error: err
+    })
+  }
+})
+
+app.put('/api/payment-penaltie/:id', tokenVerify, async (req, res) => {
+  try{
+    let { paymentReason, amount, payer } = req.body
+    
+    await PaymentPenalties.findOneAndUpdate({_id: req.params.id},{
+      paymentReason,
+      amount,
+      payer
+    })
+
+    res.json({
+      success: true,
+      message: "Payment Penalties updated!!"
+    })
+  } catch (err) {
+    console.error(err)
+    res.json({
+      success: false,
+      error: err
+    })
+  }
+})
+
+app.delete('/api/payment-penaltie/:id', tokenVerify, async (req, res) => {
+  try{    
+    await PaymentPenalties.deleteOne({_id: req.params.id})
+
+    res.json({
+      success: true,
+      message: "Payment Penalties deleted!!"
+    })
+  } catch (err) {
+    console.error(err)
+    res.json({
+      success: false,
+      error: err
+    })
+  }
 })
 
 app.get('/api/users', tokenVerify, async (req, res) => {
