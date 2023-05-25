@@ -404,6 +404,23 @@ app.put('/api/user/:id', tokenVerify, async (req, res) => {
   }
 })
 
+app.delete('/api/user/:id', tokenVerify, async (req, res) => {
+  try{    
+    await Users.deleteOne({_id: req.params.id})
+
+    res.json({
+      success: true,
+      message: "User deleted!!"
+    })
+  } catch (err) {
+    console.error(err)
+    res.json({
+      success: false,
+      error: err
+    })
+  }
+})
+
 app.get('/api/profiles', tokenVerify, async (req, res) => {
   try{
     let collection = await Profiles.find()
