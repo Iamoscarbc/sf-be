@@ -10,6 +10,7 @@ import fs from 'fs'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 import "./config/loadEnvironment.js"
+import mongoose from 'mongoose'
 
 import { Inspect, PaymentPenalties, Users, Profiles } from './models/index.js'
 
@@ -315,6 +316,94 @@ app.get('/api/users', tokenVerify, async (req, res) => {
     }
 })
 
+app.get('/api/user/:id', tokenVerify, async (req, res) => {
+    try{
+      let collection = await Users.findById(req.params.id, 'user firstname lastname docnumber phone codemployee idProfile').populate({
+        path: "idProfile",
+        model: Profiles,
+        select: "name",
+      })
+      collection.password = ''
+      res.json({
+        success: true,
+        message: "User obtained!!",
+        data: collection
+      })
+    } catch (err) {
+      console.error(err)
+      res.json({
+        success: false,
+        error: err
+      })
+    }
+})
+
+app.post('/api/user', tokenVerify, async (req, res) => {
+  const { firstname, lastname, phone, docnumber, codemployee, user, password, idProfile } = req.body;
+
+  try {
+    const usuarioExistente = await Users.findOne({ user, docnumber, codemployee });
+    if (usuarioExistente) return res.status(409).json({
+      success: false,
+      message: 'Este usuario ya ha sido registrado'
+    });
+
+    const hash = await bcrypt.hash(password, 10);
+
+    Users.create({
+      firstname,
+      lastname,
+      phone,
+      docnumber,
+      codemployee,
+      user,
+      password: hash,
+      idProfile
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Usuario registrado correctamente'
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor'
+    });
+  }
+})
+
+app.put('/api/user/:id', tokenVerify, async (req, res) => {
+  try{
+    let { codemployee, docnumber, firstname, idProfile, lastname, password, phone, user } = req.body
+
+    const hash = await bcrypt.hash(password, 10);
+
+    await Users.findOneAndUpdate({_id: req.params.id}, {
+      firstname,
+      lastname,
+      phone,
+      docnumber,
+      codemployee,
+      user,
+      password: hash,
+      idProfile
+    })
+
+    res.json({
+      success: true,
+      message: "User updated!!"
+    })
+  } catch (err) {
+    console.error(err)
+    res.json({
+      success: false,
+      error: err
+    })
+  }
+})
+
 app.get('/api/profiles', tokenVerify, async (req, res) => {
   try{
     let collection = await Profiles.find()
@@ -388,42 +477,6 @@ app.post('/api/auth/logout', tokenVerify, async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Logout exitoso'
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      message: 'Error en el servidor'
-    });
-  }
-})
-
-app.post('/api/user', tokenVerify, async (req, res) => {
-  const { firstname, lastname, phone, docnumber, codemployee, user, password, idProfile } = req.body;
-
-  try {
-    const usuarioExistente = await Users.findOne({ user, docnumber, codemployee });
-    if (usuarioExistente) return res.status(409).json({
-      success: false,
-      message: 'Este usuario ya ha sido registrado'
-    });
-
-    const hash = await bcrypt.hash(password, 10);
-
-    Users.create({
-      firstname,
-      lastname,
-      phone,
-      docnumber,
-      codemployee,
-      user,
-      password: hash,
-      idProfile
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Usuario registrado correctamente'
     });
   } catch (err) {
     console.error(err);
