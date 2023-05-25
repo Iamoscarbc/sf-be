@@ -474,7 +474,11 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.get('/api/auth/user', tokenVerify, async (req, res) => {
   try {
-    let user = await Users.findOne({ _id: req.userId }, ['firstname','lastname','phone','docnumber','codemployee','user'])
+    let user = await Users.findOne({ _id: req.userId }, ['firstname','lastname','phone','docnumber','codemployee','user']).populate({
+      path: "idProfile",
+      model: Profiles,
+      select: "name roles",
+    })
     res.status(200).json({
       success: true,
       message: 'Lista de usuarios',
