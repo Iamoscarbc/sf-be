@@ -11,6 +11,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 import "./config/loadEnvironment.js"
 import mongoose from 'mongoose'
+import moment from "moment";
 
 import { Inspect, PaymentPenalties, Users, Profiles } from './models/index.js'
 
@@ -506,6 +507,41 @@ app.post('/api/auth/logout', tokenVerify, async (req, res) => {
       message: 'Error en el servidor'
     });
   }
+})
+
+app.get('/api/indicators/:period', tokenVerify, async (req, res) => {
+    try{
+      let period = req.params.period
+      let inspects = await Inspect.aggregate([
+        { $match: {date: { "$regex": period, "$options": 'i'}} },
+        { 
+          $group: {
+            _id: "$date",
+            count: { $sum: 1 }
+          }
+        },
+        {
+          $lookup: {
+            from: 'payment-penalties',
+            localField: '_id',
+            foreignField: 'date',
+            as: 'date_pp'
+          }
+        },
+        { $sort: { "_id": 1 } }
+      ])
+      res.json({
+        success: true,
+        message: "Indicators obtained!!",
+        data: inspects
+      })
+    } catch (err) {
+      console.error(err)
+      res.json({
+        success: false,
+        error: err
+      })
+    }
 })
 
 async function tokenVerify(req, res, next) {
