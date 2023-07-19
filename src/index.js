@@ -512,28 +512,89 @@ app.post('/api/auth/logout', tokenVerify, async (req, res) => {
 app.get('/api/indicators/:period', tokenVerify, async (req, res) => {
     try{
       let period = req.params.period
+      const startDate = moment(period, "YYYYMM").startOf('month').format('YYYY-MM-DD');
+      const endDate = moment(period, "YYYYMM").endOf('month').format('YYYY-MM-DD');
+      const between = {
+        $gte: startDate,
+        $lt: endDate
+      }
       let inspects = await Inspect.aggregate([
-        { $match: {date: { "$regex": period, "$options": 'i'}} },
-        { 
-          $group: {
-            _id: "$date",
-            count: { $sum: 1 }
+        {
+          $match: {
+            date: between
+          }
+        }
+      ])
+      let paymentPenalties = await PaymentPenalties.aggregate([
+        {
+          $match: {
+            date: between
+          }
+        }
+      ])
+      const array = Number(moment(period, "YYYYMM").endOf('month').format("DD"));
+      const responseGraphic1 = [];
+      for (let index = 1; index < array + 1; index++) {
+          let day = "";
+          day = index
+          if (index <= 9) {
+              day = "0" + index
+          }
+          const fechaX = `${period}${day}`
+          let fechaPP = moment(fechaX, "YYYYMMDD").format("YYYY-MM-DD");
+          const listI = inspects.filter(x => x.date == fechaPP)
+          const listPP = paymentPenalties.filter(x => x.date == fechaPP)
+          const body = {
+            inspects: listI.length,
+            paymentPenalties: listPP.length,
+            date: moment(fechaX, "YYYYMMDD").format("DD/MM/YYYY")
+          }
+          responseGraphic1.push(body)
+      }
+
+      let responseGraphic2 = await Inspect.aggregate([
+        {
+          $match: {
+            date: between
           }
         },
         {
-          $lookup: {
-            from: 'payment-penalties',
-            localField: '_id',
-            foreignField: 'date',
-            as: 'date_pp'
+          $group:{
+            _id: "$idUser",
+            count: { $sum: 1 }
+          }
+        }
+      ])
+      await Users.populate(responseGraphic2, {
+        path: '_id',
+        select: 'user'
+      })
+      let responseGraphic3 = await PaymentPenalties.aggregate([
+        {
+          $match: {
+            date: between
           }
         },
-        { $sort: { "_id": 1 } }
+        {
+          $group:{
+            _id: "$idUser",
+            count: { $sum: 1 }
+          }
+        }
       ])
+      await Users.populate(responseGraphic3, {
+        path: '_id',
+        select: 'user'
+      })
+
       res.json({
         success: true,
         message: "Indicators obtained!!",
-        data: inspects
+        data: {
+          graphic1: responseGraphic1,
+          graphic2: responseGraphic2,
+          graphic3: responseGraphic3
+        }
       })
     } catch (err) {
       console.error(err)
