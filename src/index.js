@@ -407,11 +407,13 @@ app.put('/api/user/:id', tokenVerify, async (req, res) => {
 
 app.delete('/api/user/:id', tokenVerify, async (req, res) => {
   try{    
-    await Users.deleteOne({_id: req.params.id})
+    await Users.findOneAndUpdate({_id: req.params.id}, {
+      state: 0
+    })
 
     res.json({
       success: true,
-      message: "User deleted!!"
+      message: "User deactivated!!"
     })
   } catch (err) {
     console.error(err)

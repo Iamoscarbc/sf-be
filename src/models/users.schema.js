@@ -8,7 +8,8 @@ const UsersSchema = new mongoose.Schema({
   docnumber: String,
   phone: String,
   codemployee: String,
-  idProfile: String
+  idProfile: String,
+  state: Number
 });
 
 const Users = mongoose.model('users', UsersSchema);
