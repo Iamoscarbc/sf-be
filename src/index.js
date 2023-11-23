@@ -405,6 +405,11 @@ app.put('/api/user/:id', tokenVerify, async (req, res) => {
   }
 })
 
+app.get('/api/files/:id/:name', (req, res) => {
+  let route = path.join(__dirname, `/documents/Incidences/${req.params.id}`, req.params.name)
+  res.sendFile(route)
+})
+
 app.delete('/api/user/:id', tokenVerify, async (req, res) => {
   try{    
     await Users.findOneAndUpdate({_id: req.params.id}, {
