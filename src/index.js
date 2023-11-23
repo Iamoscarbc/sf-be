@@ -405,8 +405,13 @@ app.put('/api/user/:id', tokenVerify, async (req, res) => {
   }
 })
 
-app.get('/api/files/:id/:name', (req, res) => {
-  let route = path.join(__dirname, `/documents/Incidences/${req.params.id}`, req.params.name)
+app.get('/api/filesInspects/:id/:name', (req, res) => {
+  let route = path.join(__dirname, `/documents/Inspects/${req.params.id}`, req.params.name)
+  res.sendFile(route)
+})
+
+app.get('/api/filesPayments/:id/:name', (req, res) => {
+  let route = path.join(__dirname, `/documents/PaymentPenalties/${req.params.id}`, req.params.name)
   res.sendFile(route)
 })
 
